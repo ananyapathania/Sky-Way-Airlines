@@ -1,0 +1,11 @@
+# .gitignore for SkyWay Elite 3D AI Agent
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
