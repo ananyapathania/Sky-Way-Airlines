@@ -334,21 +334,39 @@ JFK · LAX · LHR · DXB · SIN · CDG · HND · SYD · ORD · BOM · DEL
 ❌ Cancellation | 🧳 Baggage | 💰 Fares
 """
 
+def _to_legacy(history):
+    """Convert Gradio 6 messages-format history to legacy [[user, bot], ...] for agent."""
+    legacy = []
+    for m in history:
+        if m.get("role") == "user":
+            legacy.append([m["content"], None])
+        elif m.get("role") == "assistant" and legacy:
+            legacy[-1][1] = m["content"]
+    return legacy
+
 def respond(message, history):
     if not message.strip():
         return history, ""
-    reply = agent.chat(message, history)
-    history = history + [[message, reply]]
+    reply = agent.chat(message, _to_legacy(history))
+    history = history + [
+        {"role": "user",      "content": message},
+        {"role": "assistant", "content": reply},
+    ]
     return history, ""
 
 def clear_chat():
-    return [], ""
+    return [
+        {"role": "assistant", "content": "👋 Welcome aboard **SkyWay Elite**! I'm **SkyBot**, your AI travel assistant.\n\nI can help you **search flights**, **book**, **check status**, **manage bookings**, and more.\n\nHow can I assist you today? ✈️"}
+    ], ""
 
 def quick_send(msg, history):
-    reply = agent.chat(msg, history)
-    return history + [[msg, reply]], ""
+    reply = agent.chat(msg, _to_legacy(history))
+    return history + [
+        {"role": "user",      "content": msg},
+        {"role": "assistant", "content": reply},
+    ], ""
 
-with gr.Blocks(css=CUSTOM_CSS, title="SkyWay Elite | 3D AI Agent", theme=gr.themes.Base()) as demo:
+with gr.Blocks(title="SkyWay Elite | 3D AI Agent") as demo:
 
     gr.HTML(TITLE_HTML)
 
@@ -356,7 +374,8 @@ with gr.Blocks(css=CUSTOM_CSS, title="SkyWay Elite | 3D AI Agent", theme=gr.them
         # ── Main Chat Column ──────────────────────────────────
         with gr.Column(scale=7):
             chatbot = gr.Chatbot(
-                value=[[None, "👋 Welcome aboard **SkyWay Elite**! I'm **SkyBot**, your AI travel assistant.\n\nI can help you **search flights**, **book**, **check status**, **manage bookings**, and more.\n\nHow can I assist you today? ✈️"]],
+                value=[{"role": "assistant", "content": "👋 Welcome aboard **SkyWay Elite**! I'm **SkyBot**, your AI travel assistant.\n\nI can help you **search flights**, **book**, **check status**, **manage bookings**, and more.\n\nHow can I assist you today? ✈️"}],
+                type="messages",
                 height=520,
                 elem_id="chatbot-panel",
                 show_label=False,
@@ -402,4 +421,6 @@ if __name__ == "__main__":
         share=False,
         show_error=True,
         favicon_path=None,
+        css=CUSTOM_CSS,
+        theme=gr.themes.Base(),
     )
